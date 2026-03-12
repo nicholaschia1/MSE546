@@ -11,12 +11,12 @@ Machine learning project for predicting Air Quality Index across 26 Indian citie
 
 ## Project Overview
 
-This project develops predictive models for the Air Quality Index (AQI) across India's National Capital Region (NCR) and 25 other major cities. Using daily air quality measurements from 2015-2020, we implement baseline regression models and explore temporal patterns, spatial variations, and pollutant correlations.
+This project develops predictive models for the Air Quality Index (AQI) across India's National Capital Region (NCR) and 25 other major cities. Using daily air quality measurements from 2015-2020, we implement and compare a range of models — from linear baselines to tree ensembles and deep learning architectures — evaluating their ability to capture temporal patterns, spatial variation, and pollutant dynamics.
 
 **Key Objectives:**
 - Predict daily AQI values for 26 Indian cities
 - Identify critical pollutants and temporal patterns affecting air quality
-- Build interpretable baseline models before advancing to complex architectures
+- Benchmark a diverse set of models from simple baselines to neural networks
 - Address data quality issues (missing values, interpolation artifacts)
 
 ---
@@ -37,7 +37,7 @@ This project develops predictive models for the Air Quality Index (AQI) across I
 - Volatile compounds: Benzene, Toluene, Xylene
 
 **Target Variable:**
-- `AQI`: Air Quality Index (13-2049 range)
+- `AQI`: Air Quality Index (13–2049 range)
 - `AQI_Bucket`: Categorical labels (Good, Satisfactory, Moderate, Poor, Very Poor, Severe)
 
 **Temporal:**
@@ -77,20 +77,35 @@ log1p(AQI) for training → expm1() to original scale for evaluation
 - Train: 19,750 rows (79.5%) | 2015-01-01 to 2019-11-30
 - Test: 5,100 rows (20.5%) | 2019-12-01 to 2020-07-01
 
-### 4. Baseline Models
+### 4. Models
 
-| Model | RMSE | MAE | R² | Description |
-|-------|------|-----|----|----|
-| **Persistence (lag-1)** | 44.34 | 21.52 | 0.759 | Predict yesterday's AQI |
-| **Ridge Regression** | 43.77 | 26.85 | 0.765 | Linear model on log1p(AQI), α=1.0 |
+#### Baseline Models
 
-**Per-Category Performance (Ridge MAE):**
-- Good: 30.38
-- Satisfactory: 19.88
-- Moderate: 18.08
-- Poor: 51.72
-- Very Poor: 58.29
-- Severe: 201.50
+| Model | RMSE | MAE | R² |
+|-------|------|-----|----|
+| Persistence (lag-1) | 44.34 | 21.52 | 0.759 |
+| Ridge (α=1.0) | 42.02 | 26.20 | 0.784 |
+| KNN (k=15, Euclidean, PCA 15d) | 43.81 | 26.86 | 0.765 |
+
+#### Advanced Models
+
+| Model | RMSE | MAE | R² |
+|-------|------|-----|----|
+| Random Forest | 22.47 | 11.26 | 0.938 |
+| **XGBoost (tuned)** | **21.94** | **11.73** | **0.941** |
+| FeedForward NN (128→64, dropout=0.2) | 30.53 | 16.60 | 0.886 |
+| LSTM (w=7, h=128, L=1) | 37.23 | 21.06 | 0.831 |
+
+#### Per-Category MAE Breakdown
+
+| Category | Persistence | Ridge | KNN | Random Forest | XGBoost | FNN | LSTM |
+|----------|------------|-------|-----|---------------|---------|-----|------|
+| Good | 7.01 | 30.14 | 24.61 | 6.01 | 5.02 | 13.00 | 13.94 |
+| Satisfactory | 10.82 | 19.40 | 19.93 | 6.96 | 7.67 | 9.83 | 11.43 |
+| Moderate | 24.58 | 17.62 | 24.68 | 12.69 | 13.48 | 16.66 | 23.00 |
+| Poor | 50.29 | 51.63 | 49.21 | 22.38 | 21.74 | 31.35 | 44.70 |
+| Very Poor | 41.80 | 54.75 | 37.78 | 15.16 | 17.78 | 30.64 | 40.68 |
+| Severe | 162.36 | 193.14 | 158.23 | 76.19 | 71.29 | 128.84 | 143.44 |
 
 ---
 
@@ -99,27 +114,41 @@ log1p(AQI) for training → expm1() to original scale for evaluation
 1. **PM10 is the strongest AQI predictor** (r=0.803), followed by CO (0.683) and PM2.5 (0.659)
 2. **Winter months show 2.1× higher AQI** than monsoon season
 3. **City-specific behavior:** O3 has negative correlation with AQI in some cities (Gurugram: r=-0.127) due to photochemical titration
-4. **Multicollinearity:** PM10 and PM2.5 show moderate VIF (4.5, 4.3) but remain below severe threshold
-5. **Persistence baseline performs well** (MAE=21.52), suggesting strong autocorrelation
+4. **Multicollinearity:** PM10 and PM2.5 show moderate VIF (4.5, 4.3) but remain below the severe threshold
+5. **XGBoost achieves the best overall performance** (R²=0.941, RMSE=21.94), narrowly edging Random Forest (R²=0.938)
+6. **Tree ensembles strongly outperform neural networks** on this tabular dataset; LSTM and FNN underperform relative to their complexity
+7. **Severe AQI remains the hardest category** to predict across all models due to rarity and high variability
 
 ---
 
 ## Repository Structure
 
 ```
-546_Project/
+MSE546/
 │
-├── city_day.csv                     # Raw data
+├── city_day.csv                     # Raw dataset
+├── preprocessing.py                 # Shared feature engineering pipeline
+│
 ├── AQI_EDA.ipynb                    # Exploratory data analysis
-├── baseline.ipynb                   # Baseline model implementation
+├── baseline.ipynb                   # Persistence & Ridge baseline models
+├── knn.ipynb                        # K-Nearest Neighbors model
+├── random_forest.ipynb              # Random Forest model
+├── xgboost_model.ipynb              # XGBoost model (baseline + tuned)
+├── fnn_tabular.ipynb                # Feedforward Neural Network model
+├── lstm.ipynb                       # LSTM model
+├── comparison.ipynb                 # Cross-model comparison and visualizations
+│
+├── results/                         # Saved metrics (JSON) for each model
+│   ├── persistence_metrics.json
+│   ├── ridge_metrics.json
+│   ├── knn_metrics.json
+│   ├── random_forest_metrics.json
+│   ├── xgboost_metrics.json
+│   ├── fnn_tabular_metrics.json
+│   └── lstm_metrics.json
+│
 ├── plots/                           # Generated visualizations
-│   ├── 05_station_map.png
-│   ├── 06_aqi_distribution.png
-│   ├── 07_pollutants.png
-│   ├── 09_correlations.png
-│   ├── 10a_daily_timeseries.png
-│   └── ...
-├── MSE546__Project_Specifics__W26.pdf  # Project specifications
+├── requirements.txt
 └── README.md
 ```
 
@@ -130,7 +159,7 @@ log1p(AQI) for training → expm1() to original scale for evaluation
 ### Prerequisites
 
 ```bash
-pip install pandas numpy matplotlib seaborn scikit-learn scipy jupyter
+pip install -r requirements.txt
 ```
 
 **Python Version:** 3.8+
@@ -142,13 +171,26 @@ pip install pandas numpy matplotlib seaborn scikit-learn scipy jupyter
    jupyter notebook AQI_EDA.ipynb
    ```
 
-2. **Baseline Model Training:**
+2. **Baseline Models (Persistence, Ridge):**
    ```bash
    jupyter notebook baseline.ipynb
    ```
 
-3. **Visualizations:**
-   Generated plots are saved automatically to `plots/` directory
+3. **Advanced Models:**
+   ```bash
+   jupyter notebook knn.ipynb
+   jupyter notebook random_forest.ipynb
+   jupyter notebook xgboost_model.ipynb
+   jupyter notebook fnn_tabular.ipynb
+   jupyter notebook lstm.ipynb
+   ```
+
+4. **Cross-Model Comparison:**
+   ```bash
+   jupyter notebook comparison.ipynb
+   ```
+
+Results are saved automatically to `results/` and plots to `plots/`.
 
 ---
 
@@ -186,3 +228,8 @@ Educational project for MSE 546 (Winter 2026)
 
 Dataset sourced from Indian air quality monitoring stations (2015-2020).
 Project completed as part of the Advanced Machine Learning course at the University of Waterloo.
+
+Large language models (Claude, ChatGPT) were used throughout this project for debugging assistance, code formatting, and editorial review of written content.
+
+- Anthropic. (2026). *Claude Code* [AI coding assistant]. https://claude.ai/code
+- Anysphere. (2026). *Cursor* [AI-powered code editor]. https://www.cursor.com
