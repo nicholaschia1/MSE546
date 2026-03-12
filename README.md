@@ -85,12 +85,12 @@ log1p(AQI) for training → expm1() to original scale for evaluation
 |-------|------|-----|----|
 | Persistence (lag-1) | 44.34 | 21.52 | 0.759 |
 | Ridge (α=1.0) | 42.02 | 26.20 | 0.784 |
-| KNN (k=15, Euclidean, PCA 15d) | 43.81 | 26.86 | 0.765 |
 
 #### Advanced Models
 
 | Model | RMSE | MAE | R² |
 |-------|------|-----|----|
+| KNN (k=15, Euclidean, PCA 15d) | 43.81 | 26.86 | 0.765 |
 | Random Forest | 22.47 | 11.26 | 0.938 |
 | **XGBoost (tuned)** | **21.94** | **11.73** | **0.941** |
 | FeedForward NN (128→64, dropout=0.2) | 30.53 | 16.60 | 0.886 |
